@@ -1,0 +1,97 @@
+---
+# tasks file for mysql
+
+- name: 安装pip3
+  apt:
+    name: python3-pip
+
+- name: 创建pip源配置文件路径
+  file:
+    path: /root/.pip
+    state: directory
+
+- name: 配置pip源
+  copy:
+    content: |
+      [global]
+      index-url = http://mirrors.aliyun.com/pypi/simple/
+      trusted-host = mirrors.aliyun.com
+    dest: '/root/.pip/pip.conf'
+    backup: yes
+
+- name: 升级pip3，此时pip没有绑定pip3故不能使用pip模块
+  shell:  pip3 install --upgrade pip
+
+- name: 安装msyql之前，预设置密码
+  debconf:
+    name: 'mysql-server'
+    question: 'mysql-server/root_password'
+    value: '{{mysql_root_password | quote}}'
+    vtype: 'password'
+
+- name: 预设置密码，确认
+  debconf:
+    name: 'mysql-server'
+    question: 'mysql-server/root_password_again'
+    value: '{{mysql_root_password | quote}}'
+    vtype: 'password'
+
+- name: apt方式安装mysql-server
+  apt:
+    name: '{{ mysql_version }}'
+    update_cache: true
+
+- name: 安装PyMySQL
+  pip:
+    name: PyMySQL
+
+- name: 修改root账户的权限
+  mysql_user:
+    name: root
+    password: '{{mysql_root_password}}'
+    host: '%'
+    priv: '*.*:ALL,GRANT'
+    login_user: root
+    login_password: '{{mysql_root_password}}'
+    state: present
+
+- name: 创建新用户
+  mysql_user:
+    name: '{{mysql_user_name}}'
+    password: '{{mysql_user_password}}'
+    host: '%'
+    priv: '*.*:ALL,GRANT'
+    login_user: root
+    login_password: '{{mysql_root_password}}'
+    state: present
+
+- name: 标记mysql配置文件是否已被修改
+  shell: cat /etc/mysql/mysql.cnf | grep mysqld
+  ignore_errors: True
+  register: result
+
+- name: 修改mysql配置文件，字符集问题
+  lineinfile:
+    dest: /etc/mysql/mysql.cnf
+    line: |
+      [mysqld]
+      character-set-server=utf8mb4
+      bind-address = 0.0.0.0
+
+      [mysql]
+      default-character-set=utf8mb4
+  when: result.rc == 1
+  notify: restart mysql
+
+
+#- name: 当安装msyql设置空密码时，root用户的plugin是auth_socket，需改结构才可更改密码，只用执行一次
+#  command: /usr/bin/mysql -e "alter user 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '{{mysql_root_password}}';"
+#  ignore_errors: yes
+#  run_once: true
+
+#- name: 修改mysql的root密码
+#  mysql_user:
+#    name: root
+#    password: 'liuquan'
+#    login_user: root
+#    login_password: "1234"
