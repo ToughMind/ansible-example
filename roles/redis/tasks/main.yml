@@ -1,0 +1,20 @@
+---
+# tasks file for redis
+
+- name: apt方式安装
+  apt:
+    name: redis-server
+    update_cache: true
+
+- name: 标记配置文件是否已被修改
+  shell: cat /etc/redis/redis.conf | grep 'bind 0.0.0.0'
+  ignore_errors: True
+  register: result
+
+- name: 修改配置文件，ip绑定相关
+  lineinfile:
+    path: /etc/redis/redis.conf
+    regexp: '^bind 127.0.0.1'
+    line: bind 0.0.0.0
+  when: result.rc == 1
+  notify: restart redis

@@ -1,27 +1,6 @@
 ---
 # tasks file for mysql
 
-- name: 安装pip3
-  apt:
-    name: python3-pip
-
-- name: 创建pip源配置文件路径
-  file:
-    path: /root/.pip
-    state: directory
-
-- name: 配置pip源
-  copy:
-    content: |
-      [global]
-      index-url = http://mirrors.aliyun.com/pypi/simple/
-      trusted-host = mirrors.aliyun.com
-    dest: '/root/.pip/pip.conf'
-    backup: yes
-
-- name: 升级pip3，此时pip没有绑定pip3故不能使用pip模块
-  shell:  pip3 install --upgrade pip
-
 - name: 安装msyql之前，预设置密码
   debconf:
     name: 'mysql-server'
