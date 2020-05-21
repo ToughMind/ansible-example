@@ -1,0 +1,5 @@
+---
+# vars file for gt_private_huatai
+
+# lxd里项目的根目录
+target_project_root: /root/work/workspace/private_backend

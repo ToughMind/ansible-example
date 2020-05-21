@@ -31,3 +31,7 @@
 
 - name: 升级pip3，此时pip没有绑定pip3故不能使用pip模块
   shell:  pip3 install --upgrade pip
+
+- name: install git
+  apt:
+    name: git

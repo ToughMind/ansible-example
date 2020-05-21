@@ -1,0 +1,41 @@
+---
+# tasks file for gt_private_huatai
+
+- name: 创建项目存放目录
+  file:
+    path: '{{target_project_root}}'
+    state: directory
+
+- name: 拉取项目
+  become: False
+  git:
+    repo: 'git@git.gtapp.xyz:private/production/private_backend.git'
+    dest: '{{target_project_root}}/'
+    accept_hostkey: yes
+    force: yes
+
+- name: 切换分支
+  shell: git checkout -b onepass_captcha_backend origin/onepass_captcha_backend
+  args:
+    chdir: '{{target_project_root}}/'
+
+- name:
+  template:
+    src: ./roles/gt_private_huatai/templates/backend_config.py
+    dest: '{{target_project_root}}/'
+
+- name: 安装项目依赖环境
+  apt:
+    pkg:
+    - libmysqlclient-dev
+    - python3-dev
+    - libssl-dev
+
+- name: 安装项目pip依赖
+  pip:
+    requirements: '{{target_project_root}}/requirements.txt'
+
+- name: 开启服务
+  shell: nohup python3 {{target_project_root}}/manager.py runserver 0:8000  &
+  async: 30
+  poll: 0
